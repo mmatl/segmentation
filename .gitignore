@@ -1,3 +1,7 @@
+# Local dirs that should be ignored
+segmentation/meshes/
+segmentation/segmentations/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

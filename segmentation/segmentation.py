@@ -4,6 +4,8 @@ import networkx as nx
 from visualization import Visualizer3D
 from meshpy import Mesh3D
 
+from d2_descriptor import D2Descriptor
+
 class FaceNode(object):
     """A single triangle in a 3D mesh. This class is used
     as the node element in a FaceGraph.
@@ -683,37 +685,138 @@ class Segment(object):
     """A single segment of a mesh.
     """
 
-    def __init__(self, orig_mesh, tris, cost):
-        """Create a mesh segmentation.
+    def __init__(self, orig_mesh, tri_inds, cost, area):
+        """Create a mesh segment.
 
         Parameters
         ----------
         orig_mesh : :obj:`Mesh3D`
             The mesh from which this segment is cut.
 
-        tris : :obj:`numpy.ndarray` of int
-            A N by 3 list of triangles that compose
-            the faces of the segment.
+        tri_inds : :obj:`list` of int
+            A list of the triangle indices in the mesh that comprise the
+            segment.
 
         cost : float
             The cut cost of this segment.
+
+        area : float
+            The area of this segment.
         """
-        m = Mesh3D(orig_mesh.vertices, tris, density=orig_mesh.density)
-        m.remove_unreferenced_vertices()
-        self._mesh = m
+        self._orig_mesh = orig_mesh
+        self._mesh = None
         self._cost = cost
+        self._area = area
+        self._d2_descriptor = None
+        self._repetition_count = 0
+        self._weight = 0
+
+        tri_inds = list(tri_inds)
+        tri_inds.sort()
+        self._tri_inds = tuple(tri_inds)
 
     @property
     def mesh(self):
         """:obj:`Mesh3D` : A mesh for the segment.
         """
+        if self._mesh is None:
+            tris = [self._orig_mesh.triangles[i] for i in self._tri_inds]
+            m = Mesh3D(self._orig_mesh.vertices, tris, density=self._orig_mesh.density)
+            m.remove_unreferenced_vertices()
+            self._mesh = m
         return self._mesh
+
+    @property
+    def tri_inds(self):
+        """:obj:`tuple` of int : A sorted tuple of the triangle indices in this
+        segment."""
+        return self._tri_inds
 
     @property
     def cost(self):
         """float : The cut cost of the segment.
         """
         return self._cost
+
+    @cost.setter
+    def cost(self, cost):
+        self._cost = cost
+
+    @property
+    def weight(self):
+        """float : The weight of the segment (used for segment selection
+        algorithms).
+        """
+        return self._weight
+
+    @weight.setter
+    def weight(self, w):
+        self._weight = w
+
+    @property
+    def repetition_count(self):
+        """float : The repetition count for the segment (used for segment
+        selection algorithms).
+        """
+        return self._repetition_count
+
+    @repetition_count.setter
+    def repetition_count(self, r):
+        self._repetition_count = r
+
+    @property
+    def area(self):
+        """float : The area of the segment.
+        """
+        return self._area
+
+    @property
+    def d2_descriptor(self):
+        """:obj:`D2Descriptor` : A D2 descriptor for the segment.
+        """
+        if self._d2_descriptor is None:
+            self._d2_descriptor = D2Descriptor(self.mesh, n_samples=1024*100)
+        return self._d2_descriptor
+
+    @d2_descriptor.setter
+    def d2_descriptor(self, d):
+        self._d2_descriptor = d
+
+    def show(self):
+        """Render the 3D mesh for the segment using mayavi.
+        """
+        Visualizer3D.mesh(self.mesh, style='surface', opacity=1.0)
+        Visualizer3D.show()
+
+    def distance_to(self, other):
+        """Compute the shape distance between this segment and another one.
+
+        Parameters
+        ----------
+        other : :obj:`Segment`
+            The segment to compute a distance against.
+
+        Returns
+        -------
+        float
+            The shape distance between the two segments.
+        """
+        return self.d2_descriptor.distance_to(other.d2_descriptor)
+
+    def intersects_with(self, other):
+        """Does this segment intersect with another one?
+
+        Parameters
+        ----------
+        other : :obj:`Segment`
+            Another segment to check intersection against.
+
+        Returns
+        -------
+        bool
+            True if the segments intersect, false otherwise.
+        """
+        return bool(set(self.tri_inds) & set(other.tri_inds))
 
 class Segmentation(object):
     """A segmentation of a 3D mesh.
@@ -737,6 +840,7 @@ class Segmentation(object):
         """
         self._mesh = mesh
         self._seg_graph = SegmentGraph(mesh, face_to_segment)
+        self._segments = None
 
     def reduce_to_k_segments(self, k, deterministic=True):
         """Reduce this segmentation to a total of k segments.
@@ -751,6 +855,20 @@ class Segmentation(object):
             If True, the best edge to merge at each cycle is chosen.
         """
         self._seg_graph.cut_to_k_segments(k, deterministic)
+
+    def copy(self):
+        """Return a copy of this segmentation.
+
+        Returns
+        -------
+        :obj:`Segmentation`
+            A copy of this segmentation.
+        """
+        face_to_segment = [0 for i in range(len(self._mesh.triangles))]
+        for i, seg_node in enumerate(self._seg_graph.segments):
+            for fn in seg_node.faces:
+                face_to_segment[fn.index] = i
+        return Segmentation(self._mesh, face_to_segment)
 
     @property
     def mesh(self):
@@ -768,15 +886,25 @@ class Segmentation(object):
     def segments(self):
         """:obj:`list` of :obj:`Segment` : The segments for this segmentation.
         """
-        segments = []
-        for seg_node in self._seg_graph.segments:
-            tris = []
-            for fn in seg_node.faces:
-                tris.append(fn.vertex_inds)
-            segments.append(Segment(self._mesh, tris, seg_node.ncut_cost))
-        return segments
+        if self._segments is None:
+            self._segments = []
+            for seg_node in self._seg_graph.segments:
+                tris = []
+                for fn in seg_node.faces:
+                    tris.append(fn.index)
+                self._segments.append(Segment(self._mesh, tris, seg_node.ncut_cost(), seg_node.area))
+        return self._segments
 
     def get_face_map(self):
+        """Return a list that maps faces to segments.
+
+        Returns
+        -------
+        :obj:`numpy.ndarray` of int
+            A list with a single integer entry per face in the original mesh.
+            The integer corresponding to each face is the segment ID for that
+            face. Segment ID's start at zero and run up to n_segments - 1.
+        """
         seg_ids = np.zeros(len(self.mesh.triangles))
         for i, seg_node in enumerate(self._seg_graph.segments):
             for fn in seg_node.faces:
