@@ -5,17 +5,7 @@ from visualization import Visualizer3D
 from meshpy import Mesh3D
 
 from d2_descriptor import D2Descriptor
-
-REDS   = [0.95, 0.13, 0.95, 0.53, 0.95, 0.63, 0.75, 0.76, 0.52, 0.0,
-          0.9, 0.0, 0.98, 0.38, 0.96, 0.7, 0.86, 0.53, 0.55, 0.4, 0.89, 0.17]
-
-GREENS = [0.95, 0.13, 0.76, 0.34, 0.52, 0.79, 0.0, 0.7, 0.52, 0.53,
-          0.56, 0.4, 0.58, 0.31, 0.65, 0.27, 0.83, 0.18, 0.71, 0.27, 0.35, 0.24]
-
-BLUES  = [0.96, 0.13, 0.0, 0.57, 0.0, 0.95, 0.2, 0.5, 0.51, 0.34, 0.67,
-          0.65, 0.47, 0.59, 0.0, 0.42, 0.0, 0.09, 0.0, 0.13, 0.13, 0.15]
-
-
+from color_picker import indexed_color
 
 class FaceNode(object):
     """A single triangle in a 3D mesh. This class is used
@@ -930,8 +920,7 @@ class Segmentation(object):
         """Display the current segmentation with mayavi.
         """
         for i, segment in enumerate(self.segments):
-            ci = i % len(REDS)
-            color = (REDS[ci], BLUES[ci], GREENS[ci])
+            color = indexed_color(i)
             Visualizer3D.mesh(segment.mesh, style='surface', opacity=1.0, color=color)
         Visualizer3D.show()
 
