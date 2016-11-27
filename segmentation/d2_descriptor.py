@@ -55,6 +55,10 @@ class D2Descriptor(object):
         else:
             self._verts = np.array(verts)
 
+    @property
+    def verts(self):
+        return self._verts
+
     def plot(self):
         """Plot the descriptors on a line plot.
         """
