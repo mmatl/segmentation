@@ -1,3 +1,7 @@
+"""
+File for picking unique, easily-distinguishable colors.
+Author: Matthew Matl
+"""
 
 def indexed_color(i):
     """Return a color based on an index. Identical indices will always return

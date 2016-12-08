@@ -1,18 +1,14 @@
 """
 File for loading and saving mesh segmentations.
-Author: Jeff Mahler
+Author: Matthew Matl
 """
 import os
+
 from segmentation import Segmentation
 
 class SegFile:
     """
     A mesh segmentation file reader and writer.
-
-    Attributes
-    ----------
-    filepath : :obj:`str`
-        The full path to the .seg file associated with this reader/writer.
     """
 
     def __init__(self, filepath):
@@ -35,12 +31,7 @@ class SegFile:
 
     @property
     def filepath(self):
-        """Returns the full path to the .seg file associated with this reader/writer.
-
-        Returns
-        -------
-        :obj:`str`
-            The full path to the .seg file associated with this reader/writer.
+        """:obj:`str` : The full path to the .seg file associated with this reader/writer.
         """
         return self.filepath_
 

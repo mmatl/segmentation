@@ -1,6 +1,6 @@
 """
 File for loading and saving D2 descriptors.
-Author: Jeff Mahler
+Author: Matthew Matl
 """
 import os
 import numpy as np
@@ -8,12 +8,7 @@ from d2_descriptor import D2Descriptor
 
 class DescriptorFile:
     """
-    A d2 descriptor file reader and writer.
-
-    Attributes
-    ----------
-    filepath : :obj:`str`
-        The full path to the .d2 file associated with this reader/writer.
+    A D2 descriptor file reader and writer.
     """
 
     def __init__(self, filepath):
@@ -36,12 +31,7 @@ class DescriptorFile:
 
     @property
     def filepath(self):
-        """Returns the full path to the .d2 file associated with this reader/writer.
-
-        Returns
-        -------
-        :obj:`str`
-            The full path to the .d2 file associated with this reader/writer.
+        """:obj:`str` : The full path to the .d2 file associated with this reader/writer.
         """
         return self.filepath_
 

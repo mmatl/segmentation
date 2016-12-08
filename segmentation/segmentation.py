@@ -1,3 +1,8 @@
+"""
+File for processing mesh segmentations.
+Author: Matthew Matl
+"""
+
 import numpy as np
 import networkx as nx
 
@@ -711,6 +716,7 @@ class Segment(object):
         self._d2_descriptor = None
         self._repetition_count = 0
         self._weight = 0
+        self._label = 0
 
         tri_inds = list(tri_inds)
         tri_inds.sort()
@@ -768,6 +774,16 @@ class Segment(object):
     @repetition_count.setter
     def repetition_count(self, r):
         self._repetition_count = r
+
+    @property
+    def label(self):
+        """int : An integer label for this segment.
+        """
+        return self._label
+
+    @label.setter
+    def label(self, l):
+        self._label = l
 
     @property
     def area(self):

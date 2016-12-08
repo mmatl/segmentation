@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from meshpy import Mesh3D
-
 class D2Descriptor(object):
     """A D2 Descriptor is a transform-invariant shape metric for 3D meshes.
 
